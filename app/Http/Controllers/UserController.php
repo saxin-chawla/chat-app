@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
@@ -15,13 +16,14 @@ class UserController extends Controller
         return view('signup');
     }
     public function index(){
-        $users = User::orderBy('id','DESC')->get();
+        $id = auth()->user()->id;
+        $users = User::orderBy('id', 'DESC')->where('id', '!=', $id)->get();
         return view('welcome' , ['users'=>$users]);
     }
     
-    public function chat(){
-        $users = User::orderBy('id','DESC')->get();
-        return view('chat' , ['users'=>$users]);
+    public function chat(Request $request , $id){
+        $user = User::where('id',$id)->first();
+        return view('chat' , ['user'=>$user]);
     }
     
     public function create(Request $request){
@@ -74,6 +76,18 @@ class UserController extends Controller
         ]);
 
         $user = User::where('id',$id)->first();
+        $file = $request->file('image');
+        if ($file) {
+            // Delete the previous file if it exists
+            if ($user->image) {
+                $filePath = 'public/' . $user->image;
+                Storage::delete($filePath);
+            }
+        
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $filePath = $file->storeAs('image', $fileName, 'public');
+            $user->image = $filePath;
+        }
         $user->name = $request->name;
         $user->email = $request->email;
         $user->save();

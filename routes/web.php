@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\MessageController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -23,6 +24,12 @@ Route::middleware(['guest'])->group(function(){
 
 Route::middleware(['auth'])->group(function(){
     Route::get('home', [userController::class , 'index'])->name('index');
-    Route::get('chat', [userController::class , 'chat'])->name('chat');
- 
+    Route::get('logout', [UserController::class , 'logout'])->name('logout');
+    Route::get('profile', [UserController::class , 'profile'])->name('profile');
+    Route::post('profileUpdate/{id}', [UserController::class , 'profileUpdate']);
+    Route::get('chat/{id}', [userController::class , 'chat'])->name('chat');
+    Route::get('store/{sid}/{rid}/{message}', [MessageController::class , 'messageStore'])->name('store');
+    Route::get('fetchMessage/{sid}/{rid}', [MessageController::class , 'fetchMessages'])->name('fetchMessage');
+    Route::get('check-new-messages/{sid}/{rid}', [MessageController::class , 'checkNewMessages'])->name('checkNewMessages');
+
 });

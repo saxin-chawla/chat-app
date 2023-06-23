@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
-   
+
 </head>
 
 <body class="antialiased">
@@ -23,45 +23,113 @@
             <div class="msger-header-options">
                 <span><i class="fas fa-cog"></i></span>
             </div>
+            <a href="{{ route('index') }}" class="friends btn"><button class="friends btn">Friends</button></a>
         </header>
 
-        <main class="msger-chat">
-            <div class="msg left-msg">
-                <div class="msg-img" style="background-image: url(https://image.flaticon.com/icons/svg/327/327779.svg)"></div>
 
-                <div class="msg-bubble">
-                    <div class="msg-info">
-                        <div class="msg-info-name">BOT</div>
-                        <div class="msg-info-time">12:45</div>
-                    </div>
-
-                    <div class="msg-text">
-                        Hi, welcome to SimpleChat! Go ahead and send me a message. 😄
-                    </div>
-                </div>
-            </div>
-
-            <div class="msg right-msg">
-                <div class="msg-img" style="background-image: url(https://image.flaticon.com/icons/svg/145/145867.svg)"></div>
-
-                <div class="msg-bubble">
-                    <div class="msg-info">
-                        <div class="msg-info-name">Sajad</div>
-                        <div class="msg-info-time">12:46</div>
-                    </div>
-
-                    <div class="msg-text">
-                        You can change your name in JS section!
-                    </div>
-                </div>
-            </div>
-        </main>
+        <div id="content-body">
+            @include('chat_list',['messages' => $messages])
+        </div>
 
         <form class="msger-inputarea">
-            <input type="text" class="msger-input" placeholder="Enter your message..." value="{{auth()->user()->id}}">
-            <button type="submit" class="msger-send-btn">Send</button>
+            <input type="text" class="msger-input" id="msg" placeholder="Enter your message..." autocomplete="FALSE">
+            <button type="submit" id="send" class="msger-send-btn" data-sid="{{ auth()->user()->id }}" data-rid="{{ $user->id }}" onclick="sendMessage($(this))">Send</button>
         </form>
     </section>
+
+
+    <script src="https://code.jquery.com/jquery-3.7.0.js" integrity="sha256-JlqSTELeR4TLqP0OG9dxM7yDPqX1ox/HfgiSLBj8+kM=" crossorigin="anonymous"></script>
+
+    <script>
+        // function fetchMessages() {
+        //     // let sendersId
+        //     let button = $('#send');
+        //     let sendersId = button.data('sid');
+        //     let receiversId = button.data('rid');
+        //     const addToCartUrl = "{{ route('fetchMessage', ['sid' => ':sid', 'rid' => ':rid']) }}";
+        //     const formattedUrl = addToCartUrl.replace(':sid', sendersId).replace(':rid', receiversId);
+        //     $.get(formattedUrl, function(h) {
+
+        //             $('#content-body').html(h);
+                    
+        //         }, 'html')
+        //         .fail(err => {
+        //             console.table(err)
+        //             console.log(err.responseText)
+        //         })
+        //         .always(() => {
+        //             console.log('refreshed')
+        //         });
+
+        // }
+        let lastCheckedTimestamp = 0;
+        
+        function fetchMessages() {
+  let button = $('#send');
+  let sendersId = button.data('sid');
+  let receiversId = button.data('rid');
+  const checkUrl = "{{ route('checkNewMessages', ['sid' => ':sid', 'rid' => ':rid']) }}";
+  const formattedUrl = checkUrl.replace(':sid', sendersId).replace(':rid', receiversId);
+
+  $.ajax({
+    url: formattedUrl,
+    method: 'GET',
+    data: { lastCheckedTimestamp: lastCheckedTimestamp },
+    success: function(data) {
+      if (data.hasNewMessages) {
+        // Call the fetchMessages function only if there are new messages
+        fetchAndUpdateMessages();
+        console.log('fetching');
+      }
+    }
+  });
+}
+
+function fetchAndUpdateMessages() {
+  let button = $('#send');
+  let sendersId = button.data('sid');
+  let receiversId = button.data('rid');
+  const fetchUrl = "{{ route('fetchMessage', ['sid' => ':sid', 'rid' => ':rid']) }}";
+  const formattedUrl = fetchUrl.replace(':sid', sendersId).replace(':rid', receiversId);
+
+  $.ajax({
+    url: formattedUrl,
+    method: 'GET',
+    success: function(data) {
+      $('#content-body').html(data);
+    }
+  });
+
+  lastCheckedTimestamp = Math.floor(Date.now() / 1000);
+
+}
+// fetchMessages();
+// Call fetchMessages to start polling for new messages
+setInterval(fetchMessages, 3000); // Poll every 3 seconds (adjust the interval as needed)
+
+
+        function sendMessage(button) {
+            let sendersId = button.data('sid');
+            let receiversId = button.data('rid');
+            let message = $('#msg').val();
+            console.log(message);
+            const addToCartUrl = "{{ route('store', ['sid' => ':sid', 'rid' => ':rid' , 'message' => ':msg']) }}";
+            const formattedUrl = addToCartUrl.replace(':sid', sendersId).replace(':rid', receiversId).replace(':msg', message);
+            $.get(formattedUrl, function(res) {
+                    if (res.status) {
+                        fetchMessages();
+                    }
+                }, 'json')
+                .fail(err => {
+                    console.table(err)
+                    console.log(err.responseText)
+                })
+                .always(() => {
+                    console.log('refreshed')
+                });
+        }
+        // setInterval(fetchMessages, 1000);
+    </script>
 </body>
 
 </html>
